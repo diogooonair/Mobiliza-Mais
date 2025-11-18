@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mobiliza Mais</string>
+    <string name="title_activity_main">Mobiliza Mais</string>
+    <string name="package_name">ubi.pdm.mobiliza</string>
+    <string name="custom_url_scheme">ubi.pdm.mobiliza</string>
+</resources>
