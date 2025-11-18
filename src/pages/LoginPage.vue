@@ -28,7 +28,7 @@
 
       <div class="text-center text-caption q-mb-sm">Or Sign Up Using</div>
 
-      <q-btn flat label="SIGN UP" color="primary" class="full-width" @click="goToSignup" />
+      <q-btn flat label="SIGN UP" color="primary" class="full-width" to="/signup" />
     </q-card>
   </q-page>
 </template>
@@ -45,10 +45,6 @@ function login() {
 
 function recoverPassword() {
   // lógica de recuperação
-}
-
-function goToSignup() {
-  // navegação para página de registo
 }
 </script>
 

@@ -25,17 +25,9 @@
 
       <q-btn label="SIGN UP" color="primary" class="full-width q-mb-md" @click="signup" />
 
-      <div class="text-center text-caption q-mb-sm">Or Sign Up Using</div>
-
-      <div class="row justify-around q-mb-md">
-        <q-btn round icon="fab fa-facebook" color="blue-8" @click="socialSignup('facebook')" />
-        <q-btn round icon="fab fa-twitter" color="blue-5" @click="socialSignup('twitter')" />
-        <q-btn round icon="fab fa-google" color="red-5" @click="socialSignup('google')" />
-      </div>
-
       <div class="text-center text-caption q-mb-sm">Already have an account?</div>
 
-      <q-btn flat label="LOGIN" color="primary" class="full-width" @click="goToLogin" />
+      <q-btn flat label="LOGIN" color="primary" class="full-width" to="/login" />
     </q-card>
   </q-page>
 </template>
@@ -49,10 +41,6 @@ const password = ref('')
 
 function signup() {
   // lógica de registo
-}
-
-function goToLogin() {
-  // navegação para página de login
 }
 </script>
 
