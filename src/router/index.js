@@ -1,3 +1,4 @@
+// src/router/index.js
 import { defineRouter } from '#q-app/wrappers'
 import {
   createRouter,
@@ -6,15 +7,7 @@ import {
   createWebHashHistory,
 } from 'vue-router'
 import routes from './routes'
-
-/*
- * If not building with SSR mode, you can
- * directly export the Router instantiation;
- *
- * The function below can be async too; either use
- * async/await or return a Promise which resolves
- * with the Router instance.
- */
+import { auth } from 'src/boot/firebase' // Agora isto vai funcionar!
 
 export default defineRouter(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
@@ -28,9 +21,21 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     routes,
 
     // Leave this as is and make changes in quasar.conf.js instead!
-    // quasar.conf.js -> build -> vueRouterMode
-    // quasar.conf.js -> build -> publicPath
     history: createHistory(process.env.VUE_ROUTER_BASE),
+  })
+
+  // Guard global de navegação (Proteção de rotas)
+  Router.beforeEach((to, from, next) => {
+    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+    const currentUser = auth.currentUser
+
+    if (requiresAuth && !currentUser) {
+      next('/login')
+    } else if ((to.path === '/login' || to.path === '/signup') && currentUser) {
+      next('/home')
+    } else {
+      next()
+    }
   })
 
   return Router
