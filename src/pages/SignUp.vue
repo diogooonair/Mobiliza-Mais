@@ -99,7 +99,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { authService } from 'src/services/authService'
+import { register } from 'src/stores/APICalls.js'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -114,9 +114,9 @@ const loading = ref(false)
 async function signup() {
   loading.value = true
 
-  const result = await authService.register(name.value, email.value, password.value)
+  const { error } = await register(email.value, password.value, name.value)
 
-  if (result.success) {
+  if (!error) {
     $q.notify({
       type: 'positive',
       message: 'Conta criada com sucesso! Bem-vindo ao Mobiliza+',
@@ -124,11 +124,12 @@ async function signup() {
     })
     router.push('/home')
   } else {
-    let errorMessage = result.error
+    let errorMessage = error.message || 'Erro ao criar conta'
 
-    if (errorMessage.includes('email-already-in-use')) {
+    // Custom error messages
+    if (errorMessage.includes('already registered') || errorMessage.includes('duplicate key')) {
       errorMessage = 'Este email já está registado'
-    } else if (errorMessage.includes('weak-password')) {
+    } else if (errorMessage.includes('Password should be at least')) {
       errorMessage = 'Password muito fraca'
     }
 
@@ -141,6 +142,7 @@ async function signup() {
 
   loading.value = false
 }
+
 </script>
 
 <style scoped>

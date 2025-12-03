@@ -47,26 +47,6 @@
             </q-card-section>
           </q-card>
         </div>
-
-        <div class="col-6">
-          <q-card class="stat-card">
-            <q-card-section class="text-center">
-              <q-icon name="straighten" size="32px" color="orange" />
-              <div class="text-h6 q-mt-sm">{{ stats.totalDistance.toFixed(1) }} km</div>
-              <div class="text-caption">Distância</div>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <div class="col-6">
-          <q-card class="stat-card" @click="$router.push('/rankings')">
-            <q-card-section class="text-center">
-              <q-icon name="emoji_events" size="32px" color="yellow-8" />
-              <div class="text-h6 q-mt-sm">#{{ userRanking || '?' }}</div>
-              <div class="text-caption">Ranking</div>
-            </q-card-section>
-          </q-card>
-        </div>
       </div>
     </div>
 
@@ -152,8 +132,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { authService } from 'src/services/authService'
-import { tripsService } from 'src/services/tripsService'
+import { getUser, getUserTripCount, getUserTotals, getData, signOut } from 'src/stores/APICalls.js'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -162,7 +141,6 @@ const tab = ref('home')
 const userName = ref('')
 const userPoints = ref(0)
 const userLevel = ref(1)
-const userRanking = ref(null)
 const recentTrips = ref([])
 const stats = ref({
   totalTrips: 0,
@@ -187,43 +165,49 @@ onMounted(async () => {
 })
 
 async function loadUserData() {
-  const user = authService.getCurrentUser()
+  try {
+    const { user, error } = await getUser()
+    if (error || !user) {
+      router.push('/login')
+      return
+    }
 
-  if (!user) {
-    router.push('/login')
-    return
-  }
+    userName.value = user.user_metadata?.name || 'Utilizador'
 
-  // Carregar dados do utilizador
-  const userData = await authService.getUserData(user.uid)
-  if (userData.success) {
-    userName.value = userData.data.name
-    userPoints.value = userData.data.totalPoints || 0
+    // Number of trajetos
+    const { count: numTrips, error: tripsError } = await getUserTripCount(user.id)
+    stats.value.totalTrips = tripsError ? 0 : numTrips
+
+    // Total points and CO2
+    const { totalPoints, totalCO2, error: totalsError } = await getUserTotals(user.id)
+    userPoints.value = totalsError ? 0 : totalPoints
+    stats.value.totalCO2Saved = totalsError ? 0 : totalCO2
+
+    // Calculate user level
     userLevel.value = Math.floor(userPoints.value / 1000) + 1
-  }
 
-  // Carregar estatísticas
-  const statsResult = await tripsService.getUserStats(user.uid)
-  if (statsResult.success) {
-    stats.value = statsResult.stats
-  }
-
-  // Carregar últimos trajetos
-  const tripsResult = await tripsService.getUserTrips(user.uid, 10)
-  if (tripsResult.success) {
-    recentTrips.value = tripsResult.trips
-  }
-
-  // Carregar ranking
-  const rankingResult = await tripsService.getUserRanking(user.uid)
-  if (rankingResult.success) {
-    userRanking.value = rankingResult.position
+    // Load recent trips (latest 5)
+    const { data: tripsData, error: tripsDataError } = await getData()
+    if (!tripsDataError && tripsData) {
+      // Sort by tempo descending
+      recentTrips.value = tripsData.sort((a, b) => new Date(b.tempo) - new Date(a.tempo)).slice(0, 5)
+      // Total distance
+      stats.value.totalDistance = tripsData.reduce((sum, trip) => sum + (trip.distance || 0), 0)
+    }
+  } catch (err) {
+    console.error('Error loading user data:', err)
+    router.push('/login')
   }
 }
 
 function getTransportInfo(transport) {
-  const info = tripsService.getTransportInfo()
-  return info[transport] || info.car
+  const infoMap = {
+    car: { label: 'Carro', icon: 'directions_car', color: 'grey' },
+    bike: { label: 'Bicicleta', icon: 'directions_bike', color: 'green' },
+    walk: { label: 'A pé', icon: 'directions_walk', color: 'orange' },
+    bus: { label: 'Autocarro', icon: 'directions_bus', color: 'blue' },
+  }
+  return infoMap[transport] || infoMap.car
 }
 
 function formatDate(dateString) {
@@ -251,7 +235,7 @@ async function logout() {
     cancel: true,
     persistent: true,
   }).onOk(async () => {
-    await authService.logout()
+    await signOut()
     router.push('/login')
   })
 }

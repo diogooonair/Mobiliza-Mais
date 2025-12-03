@@ -7,6 +7,8 @@ import {
   createWebHashHistory,
 } from 'vue-router'
 import routes from './routes'
+import { getUser } from 'stores/APICalls.js'
+
 
 export default defineRouter(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
@@ -24,9 +26,16 @@ export default defineRouter(function (/* { store, ssrContext } */) {
   })
 
   // Guard global de navegação (Proteção de rotas)
-  Router.beforeEach((to, from, next) => {
-    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
-    const currentUser = auth.currentUser
+  Router.beforeEach(async (to, from, next) => {
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+
+    let currentUser = null
+    try {
+      const { user, error } = await getUser()
+      if (!error) currentUser = user
+    } catch (err) {
+      console.error('Error getting current user:', err)
+    }
 
     if (requiresAuth && !currentUser) {
       next('/login')

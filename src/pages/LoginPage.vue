@@ -6,7 +6,7 @@
         <div class="text-subtitle2 text-grey-7">Mobilidade Sustentável</div>
       </div>
 
-      <q-form @submit="login">
+      <q-form @submit="inic">
         <q-input
           filled
           v-model="email"
@@ -93,13 +93,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
-import { authService } from 'src/services/authService'
+import { forgotPassword, login, getUser } from 'src/stores/APICalls.js'
+import { Notify } from 'quasar'
 
 const router = useRouter()
-const $q = useQuasar()
 
 const email = ref('')
 const password = ref('')
@@ -110,22 +109,38 @@ const showRecoverDialog = ref(false)
 const recoverEmail = ref('')
 const loadingRecover = ref(false)
 
-async function login() {
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const { user, error } = await getUser()
+    if (!error && user) {
+      router.push('/home')
+    }
+  } catch (err) {
+    console.error('Erro:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+
+async function inic() {
   loading.value = true
 
-  const result = await authService.login(email.value, password.value)
+  const { error } = await login(email.value, password.value)
 
-  if (result.success) {
-    $q.notify({
+  if (!error) {
+    Notify.create({
       type: 'positive',
       message: 'Login realizado com sucesso!',
       icon: 'check_circle',
     })
     router.push('/home')
   } else {
-    $q.notify({
+    Notify.create({
       type: 'negative',
-      message: result.error,
+      message: error.message || 'Erro ao tentar fazer login.',
       icon: 'error',
     })
   }
@@ -135,7 +150,7 @@ async function login() {
 
 async function recoverPassword() {
   if (!recoverEmail.value) {
-    $q.notify({
+    Notify.create({
       type: 'warning',
       message: 'Digite seu email',
       icon: 'warning',
@@ -145,10 +160,10 @@ async function recoverPassword() {
 
   loadingRecover.value = true
 
-  const result = await authService.resetPassword(recoverEmail.value)
+  const { error } = await forgotPassword(recoverEmail.value)
 
-  if (result.success) {
-    $q.notify({
+  if (!error) {
+    Notify.create({
       type: 'positive',
       message: 'Email de recuperação enviado!',
       icon: 'mail',
@@ -156,9 +171,9 @@ async function recoverPassword() {
     showRecoverDialog.value = false
     recoverEmail.value = ''
   } else {
-    $q.notify({
+    Notify.create({
       type: 'negative',
-      message: result.error,
+      message: error.message || 'Erro ao enviar email de recuperação.',
       icon: 'error',
     })
   }
