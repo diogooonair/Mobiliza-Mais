@@ -7,7 +7,6 @@ import {
   createWebHashHistory,
 } from 'vue-router'
 import routes from './routes'
-import { auth } from 'src/boot/firebase' // Agora isto vai funcionar!
 
 export default defineRouter(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
